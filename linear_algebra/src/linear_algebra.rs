@@ -33,7 +33,7 @@ pub fn cross(a: &Tuple4, b: &Tuple4) -> Tuple4 {
     vector(
         a.y() * b.z() - a.z() * b.y(),
         a.z() * b.x() - a.x() * b.z(),
-        a.x() * b.y() - a.y() * b.x()
+        a.x() * b.y() - a.y() * b.x(),
     )
 }
 
@@ -127,6 +127,11 @@ impl std::ops::Div<f64> for &Tuple4 {
     }
 }
 
+impl std::fmt::Display for Tuple4 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(format!("({}, {}, {}, {})", self.x(), self.y(), self.z(), self.w()).as_str())
+    }
+}
 
 impl std::fmt::Debug for Tuple4 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -257,7 +262,10 @@ mod tests {
     fn normalizing_1_2_3_gives_stuff() {
         let v = vector(1.0, 2.0, 3.0);
 
-        assert_eq!(normalized(&v), vector(0.267261241, 0.534522483, 0.801783725));
+        assert_eq!(
+            normalized(&v),
+            vector(0.267261241, 0.534522483, 0.801783725)
+        );
     }
 
     #[test]
