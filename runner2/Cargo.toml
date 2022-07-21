@@ -1,0 +1,9 @@
+[package]
+name = "runner2"
+version = "0.1.0"
+edition = "2021"
+workspace = ".."
+
+[dependencies.linear_algebra]
+path = "../linear_algebra"
+version = "0.1.0"

@@ -2,4 +2,5 @@
 members = [
     "linear_algebra",
     "runner1",
+    "runner2",
 ]
