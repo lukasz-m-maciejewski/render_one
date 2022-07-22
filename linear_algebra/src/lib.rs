@@ -1,7 +1,13 @@
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct Tuple4 {
     data: [f64; 4],
 }
+
+// pub use Tuple4 as Vector;
+// pub use Tuple4 as Point;
+
+pub type Vector = Tuple4;
+pub type Point = Tuple4;
 
 pub fn vector(x: f64, y: f64, z: f64) -> Tuple4 {
     Tuple4 {
@@ -19,17 +25,17 @@ pub fn f64_approx_eq(a: f64, b: f64) -> bool {
     f64::abs(a - b) < 0.00000001
 }
 
-pub fn normalized(t: &Tuple4) -> Tuple4 {
+pub fn normalized(t: Tuple4) -> Tuple4 {
     let mut new_t = t.clone();
     new_t.normalize();
     new_t
 }
 
-pub fn dot(a: &Tuple4, b: &Tuple4) -> f64 {
+pub fn dot(a: Tuple4, b: Tuple4) -> f64 {
     std::iter::zip(a.data, b.data).map(|(c1, c2)| c1 * c2).sum()
 }
 
-pub fn cross(a: &Tuple4, b: &Tuple4) -> Tuple4 {
+pub fn cross(a: Tuple4, b: Tuple4) -> Tuple4 {
     vector(
         a.y() * b.z() - a.z() * b.y(),
         a.z() * b.x() - a.x() * b.z(),
@@ -73,10 +79,10 @@ impl std::cmp::PartialEq for Tuple4 {
 
 impl std::cmp::Eq for Tuple4 {}
 
-impl std::ops::Add<&Tuple4> for &Tuple4 {
+impl std::ops::Add<Tuple4> for Tuple4 {
     type Output = Tuple4;
 
-    fn add(self, other: &Tuple4) -> Self::Output {
+    fn add(self, other: Tuple4) -> Self::Output {
         Tuple4::new(
             self.x() + other.x(),
             self.y() + other.y(),
@@ -86,10 +92,10 @@ impl std::ops::Add<&Tuple4> for &Tuple4 {
     }
 }
 
-impl std::ops::Sub<&Tuple4> for &Tuple4 {
+impl std::ops::Sub<Tuple4> for Tuple4 {
     type Output = Tuple4;
 
-    fn sub(self, other: &Tuple4) -> Self::Output {
+    fn sub(self, other: Tuple4) -> Self::Output {
         Tuple4::new(
             self.x() - other.x(),
             self.y() - other.y(),
@@ -99,7 +105,7 @@ impl std::ops::Sub<&Tuple4> for &Tuple4 {
     }
 }
 
-impl std::ops::Neg for &Tuple4 {
+impl std::ops::Neg for Tuple4 {
     type Output = Tuple4;
 
     fn neg(self) -> Self::Output {
@@ -107,7 +113,7 @@ impl std::ops::Neg for &Tuple4 {
     }
 }
 
-impl std::ops::Mul<f64> for &Tuple4 {
+impl std::ops::Mul<f64> for Tuple4 {
     type Output = Tuple4;
 
     fn mul(self, scalar: f64) -> Self::Output {
@@ -117,7 +123,7 @@ impl std::ops::Mul<f64> for &Tuple4 {
     }
 }
 
-impl std::ops::Div<f64> for &Tuple4 {
+impl std::ops::Div<f64> for Tuple4 {
     type Output = Tuple4;
 
     fn div(self, scalar: f64) -> Self::Output {
@@ -148,7 +154,8 @@ mod tests {
         let a1 = Tuple4::new(3.0, -2.0, 5.0, 1.0);
         let a2 = Tuple4::new(-2.0, 3.0, 1.0, 0.0);
 
-        assert_eq!(&a1 + &a2, Tuple4::new(1.0, 1.0, 6.0, 1.0));
+        assert_eq!(a1 + a2, Tuple4::new(1.0, 1.0, 6.0, 1.0));
+        assert_eq!(a1.x() + a2.x(), 1.0); // check if not moved from
     }
 
     #[test]
@@ -156,7 +163,8 @@ mod tests {
         let p1 = point(3.0, 2.0, 1.0);
         let p2 = point(5.0, 6.0, 7.0);
 
-        assert_eq!(&p1 - &p2, vector(-2.0, -4.0, -6.0));
+        assert_eq!(p1 - p2, vector(-2.0, -4.0, -6.0));
+        assert_eq!(p1.x() + p2.x(), 8.0); // check if not moved from
     }
 
     #[test]
@@ -164,7 +172,8 @@ mod tests {
         let p = point(3.0, 2.0, 1.0);
         let v = vector(5.0, 6.0, 7.0);
 
-        assert_eq!(&p - &v, point(-2.0, -4.0, -6.0))
+        assert_eq!(p - v, point(-2.0, -4.0, -6.0));
+        assert_eq!(p.x() + v.x(), 8.0); // check if not moved from
     }
 
     #[test]
@@ -172,7 +181,8 @@ mod tests {
         let p = vector(3.0, 2.0, 1.0);
         let v = vector(5.0, 6.0, 7.0);
 
-        assert_eq!(&p - &v, vector(-2.0, -4.0, -6.0))
+        assert_eq!(p - v, vector(-2.0, -4.0, -6.0));
+        assert_eq!(p.x() + v.x(), 8.0); // check if not moved from
     }
 
     #[test]
@@ -180,35 +190,40 @@ mod tests {
         let zero = vector(0.0, 0.0, 0.0);
         let v = vector(1.0, -2.0, 3.0);
 
-        assert_eq!(&zero - &v, vector(-1.0, 2.0, -3.0));
+        assert_eq!(zero - v, vector(-1.0, 2.0, -3.0));
+        assert_eq!(zero.x() + v.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn negating_tuple() {
         let a = Tuple4::new(1.0, -2.0, 3.0, -4.0);
 
-        assert_eq!(-&a, Tuple4::new(-1.0, 2.0, -3.0, 4.0));
+        assert_eq!(-a, Tuple4::new(-1.0, 2.0, -3.0, 4.0));
+        assert_eq!(a.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn multiply_tuple_by_scalar() {
         let a = Tuple4::new(1.0, -2.0, 3.0, -4.0);
 
-        assert_eq!(&a * 3.5, Tuple4::new(3.5, -7.0, 10.5, -14.0));
+        assert_eq!(a * 3.5, Tuple4::new(3.5, -7.0, 10.5, -14.0));
+        assert_eq!(a.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn multiply_tuple_by_fraction() {
         let a = Tuple4::new(1.0, -2.0, 3.0, -4.0);
 
-        assert_eq!(&a * 0.5, Tuple4::new(0.5, -1.0, 1.5, -2.0));
+        assert_eq!(a * 0.5, Tuple4::new(0.5, -1.0, 1.5, -2.0));
+        assert_eq!(a.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn dividing_tuple_by_scalar() {
         let a = Tuple4::new(1.0, -2.0, 3.0, -4.0);
 
-        assert_eq!(&a / 2.0, Tuple4::new(0.5, -1.0, 1.5, -2.0));
+        assert_eq!(a / 2.0, Tuple4::new(0.5, -1.0, 1.5, -2.0));
+        assert_eq!(a.x(), 1.0); // check if not moved from
     }
 
     #[test]
@@ -217,6 +232,7 @@ mod tests {
         let expected_magnitude = 1.0;
 
         assert!(f64_approx_eq(v.magnitude(), expected_magnitude));
+        assert_eq!(v.x(), 1.0); // check if not moved from
     }
 
     #[test]
@@ -225,6 +241,7 @@ mod tests {
         let expected_magnitude = 1.0;
 
         assert!(f64_approx_eq(v.magnitude(), expected_magnitude));
+        assert_eq!(v.x(), 0.0); // check if not moved from
     }
 
     #[test]
@@ -233,6 +250,7 @@ mod tests {
         let expected_magnitude = 1.0;
 
         assert!(f64_approx_eq(v.magnitude(), expected_magnitude));
+        assert_eq!(v.x(), 0.0); // check if not moved from
     }
 
     #[test]
@@ -241,6 +259,7 @@ mod tests {
         let expected_magnitude = f64::sqrt(14.0);
 
         assert!(f64_approx_eq(v.magnitude(), expected_magnitude));
+        assert_eq!(v.x(), 1.0); // check if not moved from
     }
 
     #[test]
@@ -255,7 +274,8 @@ mod tests {
     fn normalizing_4_0_0_gives_1_0_0() {
         let v = vector(4.0, 0.0, 0.0);
 
-        assert_eq!(normalized(&v), vector(1.0, 0.0, 0.0))
+        assert_eq!(normalized(v), vector(1.0, 0.0, 0.0));
+        assert_eq!(v.x(), 4.0); // check if not moved from
     }
 
     #[test]
@@ -263,18 +283,20 @@ mod tests {
         let v = vector(1.0, 2.0, 3.0);
 
         assert_eq!(
-            normalized(&v),
+            normalized(v),
             vector(0.267261241, 0.534522483, 0.801783725)
         );
+        assert_eq!(v.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn normalized_vector_has_magnitude_1() {
         let v = vector(1.0, 2.0, 3.0);
-        let normalized_v = normalized(&v);
+        let normalized_v = normalized(v);
         let expected_magnitude = 1.0;
 
         assert!(f64_approx_eq(normalized_v.magnitude(), expected_magnitude));
+        assert_eq!(v.x(), 1.0); // check if not moved from
     }
 
     #[test]
@@ -282,7 +304,8 @@ mod tests {
         let a = vector(1.0, 2.0, 3.0);
         let b = vector(2.0, 3.0, 4.0);
 
-        assert!(f64_approx_eq(dot(&a, &b), 20.0))
+        assert!(f64_approx_eq(dot(a, b), 20.0));
+        assert!(f64_approx_eq(dot(b, a), 20.0))
     }
 
     #[test]
@@ -290,7 +313,7 @@ mod tests {
         let a = vector(1.0, 2.0, 3.0);
         let b = vector(2.0, 3.0, 4.0);
 
-        assert_eq!(cross(&a, &b), vector(-1.0, 2.0, -1.0));
-        assert_eq!(cross(&b, &a), vector(1.0, -2.0, 1.0));
+        assert_eq!(cross(a, b), vector(-1.0, 2.0, -1.0));
+        assert_eq!(cross(b, a), vector(1.0, -2.0, 1.0));
     }
 }
