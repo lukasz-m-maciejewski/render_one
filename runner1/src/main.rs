@@ -1,6 +1,6 @@
 extern crate linear_algebra;
 
-use linear_algebra::linear_algebra::{cross, dot, vector};
+use linear_algebra::{cross, dot, vector};
 
 fn main() {
     let v1 = vector(1.0, 2.0, 3.0);
