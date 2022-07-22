@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 workspace = ".."
 
-[dependencies.linear_algebra]
-path = "../linear_algebra"
+[dependencies.r1]
+path = "../r1"
 version = "0.1.0"

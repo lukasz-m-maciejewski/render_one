@@ -3,19 +3,19 @@
 version = 3
 
 [[package]]
-name = "linear_algebra"
+name = "r1"
 version = "0.1.0"
 
 [[package]]
 name = "runner1"
 version = "0.1.0"
 dependencies = [
- "linear_algebra",
+ "r1",
 ]
 
 [[package]]
 name = "runner2"
 version = "0.1.0"
 dependencies = [
- "linear_algebra",
+ "r1",
 ]

@@ -1,6 +1,6 @@
 [workspace]
 members = [
-    "linear_algebra",
+    "r1",
     "runner1",
     "runner2",
 ]

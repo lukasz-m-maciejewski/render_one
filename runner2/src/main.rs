@@ -1,6 +1,6 @@
-extern crate linear_algebra;
+extern crate r1;
 
-use linear_algebra::{normalized, point, vector, Point, Vector};
+use r1::linear_algebra::{normalized, point, vector, Point, Vector};
 
 struct Projectile {
     position: Point,
