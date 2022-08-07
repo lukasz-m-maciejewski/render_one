@@ -1,10 +1,9 @@
+use crate::float_compare::f64_approx_eq;
+
 #[derive(Clone, Copy)]
 pub struct Tuple4 {
     data: [f64; 4],
 }
-
-// pub use Tuple4 as Vector;
-// pub use Tuple4 as Point;
 
 pub type Vector = Tuple4;
 pub type Point = Tuple4;
@@ -19,10 +18,6 @@ pub fn point(x: f64, y: f64, z: f64) -> Tuple4 {
     Tuple4 {
         data: [x, y, z, 1.0],
     }
-}
-
-pub fn f64_approx_eq(a: f64, b: f64) -> bool {
-    f64::abs(a - b) < 0.00000001
 }
 
 pub fn normalized(t: Tuple4) -> Tuple4 {
@@ -73,7 +68,7 @@ impl Tuple4 {
 
 impl std::cmp::PartialEq for Tuple4 {
     fn eq(&self, other: &Self) -> bool {
-        std::iter::zip(self.data, other.data).all(|(l, r)| f64::abs(l - r) < 0.00000001)
+        std::iter::zip(self.data, other.data).all(|(l, r)| f64_approx_eq(l, r))
     }
 }
 
