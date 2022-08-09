@@ -140,6 +140,29 @@ impl std::fmt::Debug for Tuple4 {
     }
 }
 
+pub struct Matrix4 {
+    data: [f64; 16],
+}
+
+impl Matrix4 {
+    pub fn from_array(data: [f64; 16]) -> Matrix4 {
+        Matrix4 { data }
+    }
+}
+
+impl std::ops::Index<(usize, usize)> for Matrix4 {
+    type Output = f64;
+    fn index(&self, idx: (usize, usize)) -> &Self::Output {
+        return &self.data[idx.0 * 4 + idx.1];
+    }
+}
+
+impl std::ops::IndexMut<(usize, usize)> for Matrix4 {
+    fn index_mut(&mut self, idx: (usize, usize)) -> &mut Self::Output {
+        return &mut self.data[idx.0 * 4 + idx.1];
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -277,10 +300,7 @@ mod tests {
     fn normalizing_1_2_3_gives_stuff() {
         let v = vector(1.0, 2.0, 3.0);
 
-        assert_eq!(
-            normalized(v),
-            vector(0.267261241, 0.534522483, 0.801783725)
-        );
+        assert_eq!(normalized(v), vector(0.267261241, 0.534522483, 0.801783725));
         assert_eq!(v.x(), 1.0); // check if not moved from
     }
 
@@ -310,5 +330,19 @@ mod tests {
 
         assert_eq!(cross(a, b), vector(-1.0, 2.0, -1.0));
         assert_eq!(cross(b, a), vector(1.0, -2.0, 1.0));
+    }
+
+    #[test]
+    fn matrix_create_and_access() {
+        let m = Matrix4::from_array([
+            1.0, 2.0, 3.0, 4.0, 5.5, 6.5, 7.5, 8.5, 9.0, 10.0, 11.0, 12.0, 13.5, 14.5, 15.5, 16.5,
+        ]);
+        assert_eq!(m[(0, 0)], 1.0);
+        assert_eq!(m[(0, 3)], 4.0);
+        assert_eq!(m[(1, 0)], 5.5);
+        assert_eq!(m[(1, 2)], 7.5);
+        assert_eq!(m[(2, 2)], 11.0);
+        assert_eq!(m[(3, 0)], 13.5);
+        assert_eq!(m[(3, 2)], 15.5);
     }
 }

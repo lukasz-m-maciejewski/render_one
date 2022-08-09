@@ -2,5 +2,5 @@
 members = [
     "r1",
     "runner1",
-    "runner2",
+    "projectile_on_canvas",
 ]

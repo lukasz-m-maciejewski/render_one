@@ -11,9 +11,9 @@ pub struct Dimensions {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Point {
-    x: usize,
-    y: usize,
+pub struct ScreenPoint {
+    pub x: usize,
+    pub y: usize,
 }
 
 #[derive(Clone, Debug)]
@@ -30,11 +30,11 @@ impl Canvas {
         }
     }
 
-    fn point2idx(pos: Point, d: &Dimensions) -> usize {
+    fn point2idx(pos: ScreenPoint, d: &Dimensions) -> usize {
         d.width * pos.y + pos.x
     }
 
-    fn assert_is_inside(&self, pos: Point) {
+    fn assert_is_inside(&self, pos: ScreenPoint) {
         assert!(pos.x < self.dimensions.width && pos.y < self.dimensions.height);
     }
 
@@ -46,12 +46,12 @@ impl Canvas {
         self.dimensions.height
     }
 
-    pub fn write_pixel(&mut self, pos: Point, c: Color) {
+    pub fn write_pixel(&mut self, pos: ScreenPoint, c: Color) {
         self.assert_is_inside(pos);
         self.data[Self::point2idx(pos, &self.dimensions)] = c;
     }
 
-    pub fn pixel_at(&self, pos: Point) -> Color {
+    pub fn pixel_at(&self, pos: ScreenPoint) -> Color {
         self.assert_is_inside(pos);
         self.data[Self::point2idx(pos, &self.dimensions)]
     }
@@ -62,7 +62,7 @@ impl Canvas {
 }
 
 fn color_to_integer(value: f32) -> u8 {
-   f32::ceil(255.0 * f32::clamp(value, 0.0, 1.0)) as u8
+    f32::ceil(255.0 * f32::clamp(value, 0.0, 1.0)) as u8
 }
 
 pub fn canvas_to_ppm(c: &Canvas) -> String {
@@ -94,8 +94,8 @@ mod tests {
         });
         let red = Color::new_rgb(1.0, 0.0, 0.0);
 
-        c.write_pixel(Point { x: 2, y: 3 }, red);
-        assert_eq!(c.pixel_at(Point { x: 2, y: 3 }), red);
+        c.write_pixel(ScreenPoint { x: 2, y: 3 }, red);
+        assert_eq!(c.pixel_at(ScreenPoint { x: 2, y: 3 }), red);
     }
 
     #[test]
@@ -104,9 +104,9 @@ mod tests {
             width: 5,
             height: 3,
         });
-        c.write_pixel(Point { x: 0, y: 0 }, Color::new_rgb(1.5, 0.0, 1.0));
-        c.write_pixel(Point { x: 2, y: 1 }, Color::new_rgb(0.0, 0.5, 0.0));
-        c.write_pixel(Point { x: 4, y: 2 }, Color::new_rgb(-0.5, 0.0, 1.0));
+        c.write_pixel(ScreenPoint { x: 0, y: 0 }, Color::new_rgb(1.5, 0.0, 1.0));
+        c.write_pixel(ScreenPoint { x: 2, y: 1 }, Color::new_rgb(0.0, 0.5, 0.0));
+        c.write_pixel(ScreenPoint { x: 4, y: 2 }, Color::new_rgb(-0.5, 0.0, 1.0));
         let expected = r#"P3
 5 3
 255
