@@ -81,6 +81,7 @@ pub trait Field:
     + std::ops::MulAssign
     + std::ops::Div<Output = Self>
     + std::ops::DivAssign
+    + std::fmt::Debug
 {
 }
 impl<
@@ -97,14 +98,45 @@ impl<
             + std::ops::Mul<Output = T>
             + std::ops::MulAssign
             + std::ops::Div<Output = Self>
-            + std::ops::DivAssign,
+            + std::ops::DivAssign
+            + std::fmt::Debug,
     > Field for T
 {
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Matrix<const N: usize, const M: usize, T: Field> {
     data: Vec<T>,
+}
+
+impl<const N: usize, const M: usize, T: Field> std::fmt::Debug for Matrix<N, M, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[")?;
+        for i in 0..N {
+            f.write_str("[")?;
+            f.write_fmt(format_args!("{:?}", self[(i, 0)]))?;
+            for j in 1..M {
+                f.write_fmt(format_args!(",{:?}", self[(i, j)]))?;
+            }
+            f.write_str("],")?;
+        }
+        f.write_str("]")
+    }
+}
+
+impl<const N: usize, const M: usize, T: Field> std::fmt::Display for Matrix<N, M, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[")?;
+        for i in 0..N {
+            f.write_str("[")?;
+            f.write_fmt(format_args!("{:?}", self[(i, 0)]))?;
+            for j in 1..M {
+                f.write_fmt(format_args!(",{:?}", self[(i, j)]))?;
+            }
+            f.write_str("],")?;
+        }
+        f.write_str("]")
+    }
 }
 
 impl<const N: usize, const M: usize, T: Field> std::default::Default for Matrix<N, M, T> {
@@ -157,12 +189,28 @@ pub fn identity<const N: usize, T: Field>() -> Matrix<N, N, T> {
     m
 }
 
+pub fn dot<const N: usize, T: Field>(a: &Matrix<N, 1, T>, b: &Matrix<N, 1, T>) -> T {
+    let mut prod = T::zero();
+    for i in 0..N {
+        prod += a[i] * b[i];
+    }
+    prod
+}
+
+pub fn norm_squared<const N: usize, const M: usize, T: Field>(m: &Matrix<N, M, T>) -> T {
+    let mut norm = T::zero();
+    for i in 0..N {
+        for j in 0..M {
+            norm += m[(i, j)] * m[(i, j)];
+        }
+    }
+    norm
+}
+
 impl<const N: usize, const M: usize, T: Field> FromIterator<T> for Matrix<N, M, T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let maybe_data = Vec::from_iter(iter);
-
         assert!(maybe_data.len() == (N * M));
-
         Matrix::<N, M, T> { data: maybe_data }
     }
 }

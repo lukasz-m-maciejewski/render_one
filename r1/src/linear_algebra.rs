@@ -1,4 +1,4 @@
-use crate::matrix::Matrix;
+use crate::matrix::*;
 
 pub type Tuple4 = Matrix<4, 1, f64>;
 
@@ -11,16 +11,6 @@ pub fn vector(x: f64, y: f64, z: f64) -> Tuple4 {
 
 pub fn point(x: f64, y: f64, z: f64) -> Tuple4 {
     Tuple4::new([x, y, z, 1.0])
-}
-
-pub fn normalized(t: &Tuple4) -> Tuple4 {
-    let mut new_t = t.clone();
-    new_t.normalize();
-    new_t
-}
-
-pub fn dot(a: &Tuple4, b: &Tuple4) -> f64 {
-    (&a.transposed() * b)[(0, 0)]
 }
 
 pub fn cross(a: &Tuple4, b: &Tuple4) -> Tuple4 {
@@ -46,7 +36,7 @@ impl Tuple4 {
     }
 
     pub fn magnitude(&self) -> f64 {
-        f64::sqrt(dot(self, self))
+        f64::sqrt(norm_squared(self))
     }
 
     pub fn normalize(&mut self) {
@@ -55,17 +45,11 @@ impl Tuple4 {
     }
 }
 
-impl std::fmt::Display for Tuple4 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(format!("({}, {}, {}, {})", self.x(), self.y(), self.z(), self.w()).as_str())
-    }
+pub fn normalized(t: &Tuple4) -> Tuple4 {
+    let mut new_t = t.clone();
+    new_t.normalize();
+    new_t
 }
-
-// impl std::fmt::Debug for Tuple4 {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         f.write_str(format!("({}, {}, {}, {})", self.x(), self.y(), self.z(), self.w()).as_str())
-//     }
-// }
 
 #[cfg(test)]
 mod tests {
