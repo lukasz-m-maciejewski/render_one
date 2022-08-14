@@ -66,7 +66,7 @@ impl One for i32 {
     }
 }
 
-pub trait Ring:
+pub trait Field:
     Copy
     + ApproxEq
     + std::default::Default
@@ -79,6 +79,8 @@ pub trait Ring:
     + One
     + std::ops::Mul<Output = Self>
     + std::ops::MulAssign
+    + std::ops::Div<Output = Self>
+    + std::ops::DivAssign
 {
 }
 impl<
@@ -93,17 +95,19 @@ impl<
             + std::ops::SubAssign
             + One
             + std::ops::Mul<Output = T>
-            + std::ops::MulAssign,
-    > Ring for T
+            + std::ops::MulAssign
+            + std::ops::Div<Output = Self>
+            + std::ops::DivAssign,
+    > Field for T
 {
 }
 
 #[derive(Clone, Debug)]
-pub struct Matrix<const N: usize, const M: usize, T: Ring> {
+pub struct Matrix<const N: usize, const M: usize, T: Field> {
     data: Vec<T>,
 }
 
-impl<const N: usize, const M: usize, T: Ring> std::default::Default for Matrix<N, M, T> {
+impl<const N: usize, const M: usize, T: Field> std::default::Default for Matrix<N, M, T> {
     fn default() -> Self {
         let mut data: Vec<T> = vec![];
 
@@ -115,7 +119,7 @@ impl<const N: usize, const M: usize, T: Ring> std::default::Default for Matrix<N
     }
 }
 
-impl<const N: usize, const M: usize, T: Ring> Matrix<N, M, T> {
+impl<const N: usize, const M: usize, T: Field> Matrix<N, M, T> {
     pub fn new(coeffs: [T; N * M]) -> Matrix<N, M, T> {
         Matrix::<N, M, T> {
             data: coeffs.to_vec(),
@@ -134,11 +138,11 @@ impl<const N: usize, const M: usize, T: Ring> Matrix<N, M, T> {
         Matrix::<N, M, T> { data }
     }
 
-    pub fn transpose(self) -> Matrix<M, N, T> {
+    pub fn transposed(&self) -> Matrix<M, N, T> {
         let mut m = Matrix::<M, N, T>::default();
         for i in 0..M {
             for j in 0..N {
-                m[(i,j)] = self[(j, i)];
+                m[(i, j)] = self[(j, i)];
             }
         }
 
@@ -146,7 +150,7 @@ impl<const N: usize, const M: usize, T: Ring> Matrix<N, M, T> {
     }
 }
 
-impl<const N: usize, const M: usize, T: Ring> FromIterator<T> for Matrix<N, M, T> {
+impl<const N: usize, const M: usize, T: Field> FromIterator<T> for Matrix<N, M, T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let maybe_data = Vec::from_iter(iter);
 
@@ -156,7 +160,7 @@ impl<const N: usize, const M: usize, T: Ring> FromIterator<T> for Matrix<N, M, T
     }
 }
 
-impl<const N: usize, const M: usize, T: Ring> std::ops::Index<(usize, usize)> for Matrix<N, M, T> {
+impl<const N: usize, const M: usize, T: Field> std::ops::Index<(usize, usize)> for Matrix<N, M, T> {
     type Output = T;
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         assert!(
@@ -169,7 +173,7 @@ impl<const N: usize, const M: usize, T: Ring> std::ops::Index<(usize, usize)> fo
     }
 }
 
-impl<const N: usize, const M: usize, T: Ring> std::ops::IndexMut<(usize, usize)>
+impl<const N: usize, const M: usize, T: Field> std::ops::IndexMut<(usize, usize)>
     for Matrix<N, M, T>
 {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
@@ -185,7 +189,7 @@ impl<const N: usize, const M: usize, T: Ring> std::ops::IndexMut<(usize, usize)>
 
 impl<const N: usize, const M: usize, T: Copy> std::cmp::PartialEq for Matrix<N, M, T>
 where
-    T: Ring,
+    T: Field,
 {
     fn eq(&self, other: &Self) -> bool {
         for i in 0..({ N * M }) {
@@ -198,26 +202,85 @@ where
     }
 }
 
-impl<const N: usize, const M: usize, const P: usize, T: Ring> std::ops::AddAssign<Matrix<M, P, T>>
+impl<const N: usize, const M: usize, T: Field> std::ops::AddAssign<&Matrix<N, M, T>>
     for Matrix<N, M, T>
 where
-    T: Ring,
+    T: Field,
 {
-    fn add_assign(&mut self, rhs: Matrix<M, P, T>) {
+    fn add_assign(&mut self, rhs: &Matrix<N, M, T>) {
         std::iter::zip(self.data.iter_mut(), rhs.data.iter()).for_each(|(a, b)| *a += *b)
     }
 }
 
-impl<const N: usize, const M: usize, const P: usize, T: Ring> std::ops::Add<Matrix<M, P, T>>
-    for Matrix<N, M, T>
+impl<const N: usize, const M: usize, T: Field> std::ops::Add<&Matrix<N, M, T>> for &Matrix<N, M, T>
 where
-    T: Ring,
+    T: Field,
 {
-    type Output = Self;
-    fn add(self, rhs: Matrix<M, P, T>) -> Self::Output{
+    type Output = Matrix<N, M, T>;
+    fn add(self, rhs: &Matrix<N, M, T>) -> Self::Output {
         let mut m = self.clone();
         m += rhs;
         m
+    }
+}
+
+impl<const N: usize, const M: usize, T: Field> std::ops::SubAssign<&Matrix<N, M, T>>
+    for Matrix<N, M, T>
+where
+    T: Field,
+{
+    fn sub_assign(&mut self, rhs: &Matrix<N, M, T>) {
+        std::iter::zip(self.data.iter_mut(), rhs.data.iter()).for_each(|(a, b)| *a -= *b)
+    }
+}
+
+impl<const N: usize, const M: usize, T: Field> std::ops::Sub<&Matrix<N, M, T>>
+    for &Matrix<N, M, T>
+{
+    type Output = Matrix<N, M, T>;
+    fn sub(self, rhs: &Matrix<N, M, T>) -> Self::Output {
+        let mut m = self.clone();
+        m -= rhs;
+        m
+    }
+}
+
+impl<const N: usize, const M: usize, T: Field> std::ops::Neg for &Matrix<N, M, T> {
+    type Output = Matrix<N, M, T>;
+    fn neg(self) -> Self::Output {
+        let mut m = self.clone();
+        m.data.iter_mut().for_each(|a| *a = a.neg());
+        m
+    }
+}
+
+impl<const N: usize, const M: usize, T: Field> std::ops::MulAssign<T> for Matrix<N, M, T> {
+    fn mul_assign(&mut self, rhs: T) {
+        self.data.iter_mut().for_each(|a| *a *= rhs);
+    }
+}
+
+impl<const N: usize, const M: usize, T: Field> std::ops::Mul<T> for &Matrix<N, M, T> {
+    type Output = Matrix<N, M, T>;
+    fn mul(self, rhs: T) -> Self::Output {
+        let mut out = self.clone();
+        out.data.iter_mut().for_each(|a| *a *= rhs);
+        out
+    }
+}
+
+impl<const N: usize, const M: usize, T: Field> std::ops::DivAssign<T> for Matrix<N, M, T> {
+    fn div_assign(&mut self, rhs: T) {
+        self.data.iter_mut().for_each(|a| *a /= rhs);
+    }
+}
+
+impl<const N: usize, const M: usize, T: Field> std::ops::Div<T> for &Matrix<N, M, T> {
+    type Output = Matrix<N, M, T>;
+    fn div(self, rhs: T) -> Self::Output {
+        let mut out = self.clone();
+        out.data.iter_mut().for_each(|a| *a /= rhs);
+        out
     }
 }
 
@@ -226,7 +289,7 @@ fn mul<const N: usize, const M: usize, const P: usize, T>(
     rhs: &Matrix<M, P, T>,
 ) -> Matrix<N, P, T>
 where
-    T: Ring,
+    T: Field,
 {
     let mut out = Matrix::<N, P, T>::default();
     for i in 0..N {
@@ -240,15 +303,13 @@ where
     out
 }
 
-impl<const N: usize, const M: usize, const P: usize, T: Copy> std::ops::Mul<Matrix<M, P, T>>
-    for Matrix<N, M, T>
-where
-    T: Ring,
+impl<const N: usize, const M: usize, const P: usize, T: Field> std::ops::Mul<&Matrix<M, P, T>>
+    for &Matrix<N, M, T>
 {
     type Output = Matrix<N, P, T>;
 
-    fn mul(self, rhs: Matrix<M, P, T>) -> Self::Output {
-        mul(&self, &rhs)
+    fn mul(self, rhs: &Matrix<M, P, T>) -> Self::Output {
+        mul(self, rhs)
     }
 }
 
@@ -290,7 +351,7 @@ mod tests {
         let m = Matrix::<2, 4, _>::from_nested([[1, 2, 3, 4], [5, 6, 7, 8]]);
         let m_transposed = Matrix::<4, 2, _>::from_nested([[1, 5], [2, 6], [3, 7], [4, 8]]);
 
-        assert_eq!(m.transpose(), m_transposed);
+        assert_eq!(m.transposed(), m_transposed);
     }
 
     #[test]
@@ -300,7 +361,7 @@ mod tests {
 
         let expected = Matrix::<2, 2, _>::from_nested([[2, 3], [4, 5]]);
 
-        assert_eq!(m1 + m2, expected);
+        assert_eq!(&m1 + &m2, expected);
     }
 
     #[test]
@@ -310,7 +371,7 @@ mod tests {
 
         let expected = Matrix::<2, 2, _>::from_nested([[2, 3], [4, 5]]);
 
-        m1 += m2;
+        m1 += &m2;
 
         assert_eq!(m1, expected);
     }
@@ -320,7 +381,7 @@ mod tests {
         let m1 = Matrix::<4, 3, _>::new([1, 0, 1, 2, 1, 1, 0, 1, 1, 1, 1, 2]);
         let m2 = Matrix::<3, 3, _>::new([1, 2, 1, 2, 3, 1, 4, 2, 2]);
 
-        let prod = m1 * m2;
+        let prod = &m1 * &m2;
         let expected_prod = Matrix::<4, 3, _>::new([5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6]);
 
         assert_eq!(prod, expected_prod);

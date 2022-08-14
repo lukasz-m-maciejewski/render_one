@@ -1,36 +1,29 @@
-use crate::float_compare::f64_approx_eq;
+use crate::matrix::Matrix;
 
-#[derive(Clone, Copy)]
-pub struct Tuple4 {
-    data: [f64; 4],
-}
+pub type Tuple4 = Matrix<4, 1, f64>;
 
 pub type Vector = Tuple4;
 pub type Point = Tuple4;
 
 pub fn vector(x: f64, y: f64, z: f64) -> Tuple4 {
-    Tuple4 {
-        data: [x, y, z, 0.0],
-    }
+    Tuple4::new([x, y, z, 0.0])
 }
 
 pub fn point(x: f64, y: f64, z: f64) -> Tuple4 {
-    Tuple4 {
-        data: [x, y, z, 1.0],
-    }
+    Tuple4::new([x, y, z, 1.0])
 }
 
-pub fn normalized(t: Tuple4) -> Tuple4 {
+pub fn normalized(t: &Tuple4) -> Tuple4 {
     let mut new_t = t.clone();
     new_t.normalize();
     new_t
 }
 
-pub fn dot(a: Tuple4, b: Tuple4) -> f64 {
-    std::iter::zip(a.data, b.data).map(|(c1, c2)| c1 * c2).sum()
+pub fn dot(a: &Tuple4, b: &Tuple4) -> f64 {
+    (&a.transposed() * b)[(0, 0)]
 }
 
-pub fn cross(a: Tuple4, b: Tuple4) -> Tuple4 {
+pub fn cross(a: &Tuple4, b: &Tuple4) -> Tuple4 {
     vector(
         a.y() * b.z() - a.z() * b.y(),
         a.z() * b.x() - a.x() * b.z(),
@@ -39,92 +32,26 @@ pub fn cross(a: Tuple4, b: Tuple4) -> Tuple4 {
 }
 
 impl Tuple4 {
-    pub fn new(x: f64, y: f64, z: f64, w: f64) -> Tuple4 {
-        Tuple4 { data: [x, y, z, w] }
-    }
-
     pub fn x(&self) -> f64 {
-        self.data[0]
+        self[(0, 0)]
     }
     pub fn y(&self) -> f64 {
-        self.data[1]
+        self[(1, 0)]
     }
     pub fn z(&self) -> f64 {
-        self.data[2]
+        self[(2, 0)]
     }
     pub fn w(&self) -> f64 {
-        self.data[3]
+        self[(3, 0)]
     }
 
     pub fn magnitude(&self) -> f64 {
-        f64::sqrt(self.data.iter().map(|t| t * t).sum())
+        f64::sqrt(dot(self, self))
     }
 
     pub fn normalize(&mut self) {
         let m = self.magnitude();
-        self.data.iter_mut().for_each(|coord| *coord /= m);
-    }
-}
-
-impl std::cmp::PartialEq for Tuple4 {
-    fn eq(&self, other: &Self) -> bool {
-        std::iter::zip(self.data, other.data).all(|(l, r)| f64_approx_eq(l, r))
-    }
-}
-
-impl std::cmp::Eq for Tuple4 {}
-
-impl std::ops::Add<Tuple4> for Tuple4 {
-    type Output = Tuple4;
-
-    fn add(self, other: Tuple4) -> Self::Output {
-        Tuple4::new(
-            self.x() + other.x(),
-            self.y() + other.y(),
-            self.z() + other.z(),
-            self.w() + other.w(),
-        )
-    }
-}
-
-impl std::ops::Sub<Tuple4> for Tuple4 {
-    type Output = Tuple4;
-
-    fn sub(self, other: Tuple4) -> Self::Output {
-        Tuple4::new(
-            self.x() - other.x(),
-            self.y() - other.y(),
-            self.z() - other.z(),
-            self.w() - other.w(),
-        )
-    }
-}
-
-impl std::ops::Neg for Tuple4 {
-    type Output = Tuple4;
-
-    fn neg(self) -> Self::Output {
-        Tuple4::new(-self.x(), -self.y(), -self.z(), -self.w())
-    }
-}
-
-impl std::ops::Mul<f64> for Tuple4 {
-    type Output = Tuple4;
-
-    fn mul(self, scalar: f64) -> Self::Output {
-        let mut new_data: [f64; 4] = self.data.clone();
-        new_data.iter_mut().for_each(|coord| (*coord) *= scalar);
-        Tuple4 { data: new_data }
-    }
-}
-
-impl std::ops::Div<f64> for Tuple4 {
-    type Output = Tuple4;
-
-    fn div(self, scalar: f64) -> Self::Output {
-        let mut new_data: [f64; 4] = self.data.clone();
-        new_data.iter_mut().for_each(|coord| (*coord) /= scalar);
-        Tuple4 { data: new_data }
+        *self /= m;
     }
 }
 
@@ -134,45 +61,23 @@ impl std::fmt::Display for Tuple4 {
     }
 }
 
-impl std::fmt::Debug for Tuple4 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(format!("({}, {}, {}, {})", self.x(), self.y(), self.z(), self.w()).as_str())
-    }
-}
-
-pub struct Matrix4 {
-    data: [f64; 16],
-}
-
-impl Matrix4 {
-    pub fn from_array(data: [f64; 16]) -> Matrix4 {
-        Matrix4 { data }
-    }
-}
-
-impl std::ops::Index<(usize, usize)> for Matrix4 {
-    type Output = f64;
-    fn index(&self, idx: (usize, usize)) -> &Self::Output {
-        return &self.data[idx.0 * 4 + idx.1];
-    }
-}
-
-impl std::ops::IndexMut<(usize, usize)> for Matrix4 {
-    fn index_mut(&mut self, idx: (usize, usize)) -> &mut Self::Output {
-        return &mut self.data[idx.0 * 4 + idx.1];
-    }
-}
+// impl std::fmt::Debug for Tuple4 {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         f.write_str(format!("({}, {}, {}, {})", self.x(), self.y(), self.z(), self.w()).as_str())
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::float_compare::f64_approx_eq;
 
     #[test]
     fn adding_two_tuples() {
-        let a1 = Tuple4::new(3.0, -2.0, 5.0, 1.0);
-        let a2 = Tuple4::new(-2.0, 3.0, 1.0, 0.0);
+        let a1 = Tuple4::new([3.0, -2.0, 5.0, 1.0]);
+        let a2 = Tuple4::new([-2.0, 3.0, 1.0, 0.0]);
 
-        assert_eq!(a1 + a2, Tuple4::new(1.0, 1.0, 6.0, 1.0));
+        assert_eq!(&a1 + &a2, Tuple4::new([1.0, 1.0, 6.0, 1.0]));
         assert_eq!(a1.x() + a2.x(), 1.0); // check if not moved from
     }
 
@@ -181,7 +86,7 @@ mod tests {
         let p1 = point(3.0, 2.0, 1.0);
         let p2 = point(5.0, 6.0, 7.0);
 
-        assert_eq!(p1 - p2, vector(-2.0, -4.0, -6.0));
+        assert_eq!(&p1 - &p2, vector(-2.0, -4.0, -6.0));
         assert_eq!(p1.x() + p2.x(), 8.0); // check if not moved from
     }
 
@@ -190,7 +95,7 @@ mod tests {
         let p = point(3.0, 2.0, 1.0);
         let v = vector(5.0, 6.0, 7.0);
 
-        assert_eq!(p - v, point(-2.0, -4.0, -6.0));
+        assert_eq!(&p - &v, point(-2.0, -4.0, -6.0));
         assert_eq!(p.x() + v.x(), 8.0); // check if not moved from
     }
 
@@ -199,7 +104,7 @@ mod tests {
         let p = vector(3.0, 2.0, 1.0);
         let v = vector(5.0, 6.0, 7.0);
 
-        assert_eq!(p - v, vector(-2.0, -4.0, -6.0));
+        assert_eq!(&p - &v, vector(-2.0, -4.0, -6.0));
         assert_eq!(p.x() + v.x(), 8.0); // check if not moved from
     }
 
@@ -208,39 +113,39 @@ mod tests {
         let zero = vector(0.0, 0.0, 0.0);
         let v = vector(1.0, -2.0, 3.0);
 
-        assert_eq!(zero - v, vector(-1.0, 2.0, -3.0));
+        assert_eq!(&zero - &v, vector(-1.0, 2.0, -3.0));
         assert_eq!(zero.x() + v.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn negating_tuple() {
-        let a = Tuple4::new(1.0, -2.0, 3.0, -4.0);
+        let a = Tuple4::new([1.0, -2.0, 3.0, -4.0]);
 
-        assert_eq!(-a, Tuple4::new(-1.0, 2.0, -3.0, 4.0));
+        assert_eq!(-&a, Tuple4::new([-1.0, 2.0, -3.0, 4.0]));
         assert_eq!(a.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn multiply_tuple_by_scalar() {
-        let a = Tuple4::new(1.0, -2.0, 3.0, -4.0);
+        let a = Tuple4::new([1.0, -2.0, 3.0, -4.0]);
 
-        assert_eq!(a * 3.5, Tuple4::new(3.5, -7.0, 10.5, -14.0));
+        assert_eq!(&a * 3.5, Tuple4::new([3.5, -7.0, 10.5, -14.0]));
         assert_eq!(a.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn multiply_tuple_by_fraction() {
-        let a = Tuple4::new(1.0, -2.0, 3.0, -4.0);
+        let a = Tuple4::new([1.0, -2.0, 3.0, -4.0]);
 
-        assert_eq!(a * 0.5, Tuple4::new(0.5, -1.0, 1.5, -2.0));
+        assert_eq!(&a * 0.5, Tuple4::new([0.5, -1.0, 1.5, -2.0]));
         assert_eq!(a.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn dividing_tuple_by_scalar() {
-        let a = Tuple4::new(1.0, -2.0, 3.0, -4.0);
+        let a = Tuple4::new([1.0, -2.0, 3.0, -4.0]);
 
-        assert_eq!(a / 2.0, Tuple4::new(0.5, -1.0, 1.5, -2.0));
+        assert_eq!(&a / 2.0, Tuple4::new([0.5, -1.0, 1.5, -2.0]));
         assert_eq!(a.x(), 1.0); // check if not moved from
     }
 
@@ -292,7 +197,7 @@ mod tests {
     fn normalizing_4_0_0_gives_1_0_0() {
         let v = vector(4.0, 0.0, 0.0);
 
-        assert_eq!(normalized(v), vector(1.0, 0.0, 0.0));
+        assert_eq!(normalized(&v), vector(1.0, 0.0, 0.0));
         assert_eq!(v.x(), 4.0); // check if not moved from
     }
 
@@ -300,14 +205,14 @@ mod tests {
     fn normalizing_1_2_3_gives_stuff() {
         let v = vector(1.0, 2.0, 3.0);
 
-        assert_eq!(normalized(v), vector(0.267261241, 0.534522483, 0.801783725));
+        assert_eq!(normalized(&v), vector(0.267261241, 0.534522483, 0.801783725));
         assert_eq!(v.x(), 1.0); // check if not moved from
     }
 
     #[test]
     fn normalized_vector_has_magnitude_1() {
         let v = vector(1.0, 2.0, 3.0);
-        let normalized_v = normalized(v);
+        let normalized_v = normalized(&v);
         let expected_magnitude = 1.0;
 
         assert!(f64_approx_eq(normalized_v.magnitude(), expected_magnitude));
@@ -319,8 +224,8 @@ mod tests {
         let a = vector(1.0, 2.0, 3.0);
         let b = vector(2.0, 3.0, 4.0);
 
-        assert!(f64_approx_eq(dot(a, b), 20.0));
-        assert!(f64_approx_eq(dot(b, a), 20.0))
+        assert!(f64_approx_eq(dot(&a, &b), 20.0));
+        assert!(f64_approx_eq(dot(&b, &a), 20.0))
     }
 
     #[test]
@@ -328,21 +233,8 @@ mod tests {
         let a = vector(1.0, 2.0, 3.0);
         let b = vector(2.0, 3.0, 4.0);
 
-        assert_eq!(cross(a, b), vector(-1.0, 2.0, -1.0));
-        assert_eq!(cross(b, a), vector(1.0, -2.0, 1.0));
+        assert_eq!(cross(&a, &b), vector(-1.0, 2.0, -1.0));
+        assert_eq!(cross(&b, &a), vector(1.0, -2.0, 1.0));
     }
 
-    #[test]
-    fn matrix_create_and_access() {
-        let m = Matrix4::from_array([
-            1.0, 2.0, 3.0, 4.0, 5.5, 6.5, 7.5, 8.5, 9.0, 10.0, 11.0, 12.0, 13.5, 14.5, 15.5, 16.5,
-        ]);
-        assert_eq!(m[(0, 0)], 1.0);
-        assert_eq!(m[(0, 3)], 4.0);
-        assert_eq!(m[(1, 0)], 5.5);
-        assert_eq!(m[(1, 2)], 7.5);
-        assert_eq!(m[(2, 2)], 11.0);
-        assert_eq!(m[(3, 0)], 13.5);
-        assert_eq!(m[(3, 2)], 15.5);
-    }
 }
