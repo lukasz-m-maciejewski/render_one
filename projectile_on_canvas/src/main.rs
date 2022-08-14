@@ -2,7 +2,7 @@ extern crate r1;
 
 use std::io::Write;
 
-use r1::canvas::{Canvas, Dimensions, ScreenPoint, canvas_to_ppm};
+use r1::canvas::{canvas_to_ppm, Canvas, Dimensions, ScreenPoint};
 use r1::color::Color;
 use r1::linear_algebra::{normalized, point, vector, Point, Vector};
 
@@ -65,5 +65,6 @@ fn main() {
     );
 
     let mut file = std::fs::File::create("projectile_trace.ppm").expect("file create failed");
-    file.write_all(canvas_to_ppm(&canvas).as_bytes()).expect("file write failed");
+    file.write_all(canvas_to_ppm(&canvas).as_bytes())
+        .expect("file write failed");
 }

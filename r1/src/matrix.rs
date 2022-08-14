@@ -148,7 +148,6 @@ impl<const N: usize, const M: usize, T: Field> Matrix<N, M, T> {
 
         m
     }
-
 }
 
 pub fn identity<const N: usize, T: Field>() -> Matrix<N, N, T> {
@@ -399,10 +398,23 @@ mod tests {
 
     #[test]
     fn matrix_multiplicative_identity() {
-        let m = Matrix::<4, 4, _>::from_nested([[0, 1, 2, 4 ], [1, 2, 4, 8], [2, 4, 8, 16], [4, 8, 16, 32]]);
+        let m = Matrix::<4, 4, _>::from_nested([
+            [0, 1, 2, 4],
+            [1, 2, 4, 8],
+            [2, 4, 8, 16],
+            [4, 8, 16, 32],
+        ]);
         let id = identity::<4, i32>();
 
         assert_eq!(&m * &id, m);
         assert_eq!(&id * &m, m);
+    }
+
+    #[test]
+    fn matrix_transpose_identity() {
+        let id = identity::<4, i32>();
+        let id_transposed = id.transposed();
+
+        assert_eq!(id, id_transposed);
     }
 }
