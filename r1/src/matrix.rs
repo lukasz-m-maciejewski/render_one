@@ -66,6 +66,22 @@ impl One for i32 {
     }
 }
 
+pub trait Sqrt {
+    fn sqrt(&self) -> Self;
+}
+
+impl Sqrt for f64 {
+    fn sqrt(&self) -> f64 {
+        f64::sqrt(*self)
+    }
+}
+
+impl Sqrt for f32 {
+    fn sqrt(&self) -> f32 {
+        f32::sqrt(*self)
+    }
+}
+
 pub trait Field:
     Copy
     + ApproxEq
@@ -363,6 +379,60 @@ impl<const N: usize, const M: usize, const P: usize, T: Field> std::ops::Mul<&Ma
     }
 }
 
+pub fn qr_decomposition<const N: usize, T: Field + Sqrt>(
+    m: &Matrix<N, N, T>,
+) -> (Matrix<N, N, T>, Matrix<N, N, T>) {
+    let mut q = m.clone();
+    let mut r = Matrix::<N, N, T>::default();
+
+    for k in 0..N {
+        for i in 0..k {
+            r[(i, k)] = column_product(&q, i, k);
+            column_sub_assign_with_factor(&mut q, k, i, r[(i, k)]);
+        }
+
+        r[(k, k)] = column_norm(&q, k);
+        column_div_assign(&mut q, k, r[(k, k)]);
+    }
+
+    (-&q, -&r)
+}
+
+fn column_product<const N: usize, T: Field>(m: &Matrix<N, N, T>, idx1: usize, idx2: usize) -> T {
+    let mut prod = T::zero();
+    for i in 0..N {
+        prod += m[(i, idx1)] * m[(i, idx2)];
+    }
+    prod
+}
+
+fn column_norm<const N: usize, T: Field + Sqrt>(m: &Matrix<N, N, T>, idx: usize) -> T {
+    let mut norm = T::zero();
+    for i in 0..N {
+        norm += m[(i, idx)] * m[(i, idx)];
+    }
+
+    norm.sqrt()
+}
+
+fn column_sub_assign_with_factor<const N: usize, T: Field>(
+    m: &mut Matrix<N, N, T>,
+    modified_col: usize,
+    from: usize,
+    factor: T,
+) {
+    for i in 0..N {
+        let from_coeff = m[(i, from)];
+        m[(i, modified_col)] -= factor * from_coeff;
+    }
+}
+
+fn column_div_assign<const N: usize, T: Field>(m: &mut Matrix<N, N, T>, idx: usize, divisor: T) {
+    for i in 0..N {
+        m[(i, idx)] /= divisor;
+    }
+}
+
 pub type Matrix2 = Matrix<2, 2, f64>;
 pub type Matrix3 = Matrix<3, 3, f64>;
 pub type Matrix4 = Matrix<4, 4, f64>;
@@ -469,5 +539,54 @@ mod tests {
         assert_eq!(v[(0, 0)], 1);
         assert_eq!(v[(1, 0)], 2);
         assert_eq!(v[(2, 0)], 3);
+    }
+
+    #[test]
+    fn matrix_qr_decomposition() {
+        let a = Matrix::<3, 3, f64>::from_nested([
+            [12.0, -51.0, 4.0],
+            [6.0, 167.0, -68.0],
+            [-4.0, 24.0, -41.0],
+        ]);
+
+        let expected_q = Matrix::<3, 3, f64>::from_nested([
+            [-6.0 / 7.0, 69.0 / 175.0, 58.0 / 175.0],
+            [-3.0 / 7.0, -158.0 / 175.0, -6.0 / 175.0],
+            [2.0 / 7.0, -6.0 / 35.0, 33.0 / 35.0],
+        ]);
+
+        let expected_r = Matrix::<3, 3, f64>::from_nested([
+            [-14.0, -21.0, 14.0],
+            [0.0, -175.0, 70.0],
+            [0.0, 0.0, -35.0],
+        ]);
+
+        let (q, r) = qr_decomposition(&a);
+
+        assert_eq!(q, expected_q);
+        assert_eq!(r, expected_r);
+    }
+
+    #[test]
+    fn matrix_qr_decomposition_singular_matrix() {
+        let a = Matrix::<3, 3, f64>::from_nested([
+            [12.0, -51.0, 4.0],
+            [0.0, 0.0, 0.0],
+            [6.0, 167.0, -68.0],
+        ]);
+        let expected_q = Matrix::<3, 3, f64>::from_nested([
+            [-0.89442719, 0.4472136, 0.],
+            [-0., 0., -1.],
+            [-0.4472136, -0.89442719, 0.],
+        ]);
+        let expected_r = Matrix::<3, 3, f64>::from_nested([
+            [-13.41640786, -29.06888371, 26.83281573],
+            [0., -172.17723427, 62.60990337],
+            [0., 0., 0.],
+        ]);
+        let (q, r) = qr_decomposition(&a);
+
+        assert_eq!(q, expected_q);
+        assert_eq!(r, expected_r);
     }
 }
