@@ -70,7 +70,7 @@ impl std::fmt::Display for Tuple4 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::float_compare::f64_approx_eq;
+    use crate::{float_compare::f64_approx_eq};
 
     #[test]
     fn adding_two_tuples() {
@@ -237,4 +237,13 @@ mod tests {
         assert_eq!(cross(&b, &a), vector(1.0, -2.0, 1.0));
     }
 
+    #[test]
+    fn multiply_matrix_by_vector() {
+        let m = Matrix::<4, 4, _>::from_nested([[1, 2, 3, 4], [2, 4, 4, 2], [8, 6, 4, 1], [0, 0, 0, 1]]);
+        let v = Matrix::<4, 1, _>::from_nested([[1], [2], [3], [1]]);
+
+        let expected = Matrix::<4, 1, _>::from_nested([[18], [24], [33], [1]]);
+
+        assert_eq!(&m * &v, expected);
+    }
 }

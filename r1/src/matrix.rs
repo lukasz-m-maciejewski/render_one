@@ -148,6 +148,16 @@ impl<const N: usize, const M: usize, T: Field> Matrix<N, M, T> {
 
         m
     }
+
+}
+
+pub fn identity<const N: usize, T: Field>() -> Matrix<N, N, T> {
+    let mut m = Matrix::<N, N, T>::default();
+    for i in 0..N {
+        m[(i, i)] = T::one();
+    }
+
+    m
 }
 
 impl<const N: usize, const M: usize, T: Field> FromIterator<T> for Matrix<N, M, T> {
@@ -385,5 +395,14 @@ mod tests {
         let expected_prod = Matrix::<4, 3, _>::new([5, 4, 3, 8, 9, 5, 6, 5, 3, 11, 9, 6]);
 
         assert_eq!(prod, expected_prod);
+    }
+
+    #[test]
+    fn matrix_multiplicative_identity() {
+        let m = Matrix::<4, 4, _>::from_nested([[0, 1, 2, 4 ], [1, 2, 4, 8], [2, 4, 8, 16], [4, 8, 16, 32]]);
+        let id = identity::<4, i32>();
+
+        assert_eq!(&m * &id, m);
+        assert_eq!(&id * &m, m);
     }
 }
