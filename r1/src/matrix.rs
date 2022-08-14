@@ -1,8 +1,6 @@
-use std::ops::{Add, AddAssign, Mul, MulAssign};
-
 use crate::float_compare::{f32_approx_eq, f64_approx_eq};
 
-trait ApproxEq {
+pub trait ApproxEq {
     fn approx_eq(&self, other: &Self) -> bool;
 }
 
@@ -24,19 +22,88 @@ impl ApproxEq for i32 {
     }
 }
 
-trait ArithmeticType: Copy + std::default::Default + Add + Mul + AddAssign + MulAssign {}
+pub trait Zero {
+    fn zero() -> Self;
+}
+
+impl Zero for f64 {
+    fn zero() -> f64 {
+        0.0
+    }
+}
+
+impl Zero for f32 {
+    fn zero() -> f32 {
+        0.0
+    }
+}
+
+impl Zero for i32 {
+    fn zero() -> i32 {
+        0
+    }
+}
+
+pub trait One {
+    fn one() -> Self;
+}
+
+impl One for f64 {
+    fn one() -> f64 {
+        1.0
+    }
+}
+
+impl One for f32 {
+    fn one() -> f32 {
+        1.0
+    }
+}
+
+impl One for i32 {
+    fn one() -> i32 {
+        1
+    }
+}
+
+pub trait Ring:
+    Copy
+    + ApproxEq
+    + std::default::Default
+    + Zero
+    + std::ops::Add<Output = Self>
+    + std::ops::AddAssign
+    + std::ops::Neg<Output = Self>
+    + std::ops::Sub<Output = Self>
+    + std::ops::SubAssign
+    + One
+    + std::ops::Mul<Output = Self>
+    + std::ops::MulAssign
+{
+}
 impl<
-        T: Copy + std::default::Default + Add<Output = T> + Mul<Output = T> + AddAssign + MulAssign,
-    > ArithmeticType for T
+        T: Copy
+            + ApproxEq
+            + std::default::Default
+            + Zero
+            + std::ops::Add<Output = T>
+            + std::ops::AddAssign
+            + std::ops::Neg<Output = T>
+            + std::ops::Sub<Output = T>
+            + std::ops::SubAssign
+            + One
+            + std::ops::Mul<Output = T>
+            + std::ops::MulAssign,
+    > Ring for T
 {
 }
 
 #[derive(Clone, Debug)]
-pub struct Matrix<const N: usize, const M: usize, T: ArithmeticType> {
+pub struct Matrix<const N: usize, const M: usize, T: Ring> {
     data: Vec<T>,
 }
 
-impl<const N: usize, const M: usize, T: ArithmeticType> std::default::Default for Matrix<N, M, T> {
+impl<const N: usize, const M: usize, T: Ring> std::default::Default for Matrix<N, M, T> {
     fn default() -> Self {
         let mut data: Vec<T> = vec![];
 
@@ -48,7 +115,7 @@ impl<const N: usize, const M: usize, T: ArithmeticType> std::default::Default fo
     }
 }
 
-impl<const N: usize, const M: usize, T: ArithmeticType> Matrix<N, M, T> {
+impl<const N: usize, const M: usize, T: Ring> Matrix<N, M, T> {
     pub fn new(coeffs: [T; N * M]) -> Matrix<N, M, T> {
         Matrix::<N, M, T> {
             data: coeffs.to_vec(),
@@ -66,9 +133,20 @@ impl<const N: usize, const M: usize, T: ArithmeticType> Matrix<N, M, T> {
 
         Matrix::<N, M, T> { data }
     }
+
+    pub fn transpose(self) -> Matrix<M, N, T> {
+        let mut m = Matrix::<M, N, T>::default();
+        for i in 0..M {
+            for j in 0..N {
+                m[(i,j)] = self[(j, i)];
+            }
+        }
+
+        m
+    }
 }
 
-impl<const N: usize, const M: usize, T: ArithmeticType> FromIterator<T> for Matrix<N, M, T> {
+impl<const N: usize, const M: usize, T: Ring> FromIterator<T> for Matrix<N, M, T> {
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let maybe_data = Vec::from_iter(iter);
 
@@ -78,9 +156,7 @@ impl<const N: usize, const M: usize, T: ArithmeticType> FromIterator<T> for Matr
     }
 }
 
-impl<const N: usize, const M: usize, T: ArithmeticType> std::ops::Index<(usize, usize)>
-    for Matrix<N, M, T>
-{
+impl<const N: usize, const M: usize, T: Ring> std::ops::Index<(usize, usize)> for Matrix<N, M, T> {
     type Output = T;
     fn index(&self, index: (usize, usize)) -> &Self::Output {
         assert!(
@@ -93,7 +169,7 @@ impl<const N: usize, const M: usize, T: ArithmeticType> std::ops::Index<(usize, 
     }
 }
 
-impl<const N: usize, const M: usize, T: ArithmeticType> std::ops::IndexMut<(usize, usize)>
+impl<const N: usize, const M: usize, T: Ring> std::ops::IndexMut<(usize, usize)>
     for Matrix<N, M, T>
 {
     fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
@@ -109,7 +185,7 @@ impl<const N: usize, const M: usize, T: ArithmeticType> std::ops::IndexMut<(usiz
 
 impl<const N: usize, const M: usize, T: Copy> std::cmp::PartialEq for Matrix<N, M, T>
 where
-    T: ArithmeticType + ApproxEq,
+    T: Ring,
 {
     fn eq(&self, other: &Self) -> bool {
         for i in 0..({ N * M }) {
@@ -122,13 +198,26 @@ where
     }
 }
 
-impl<const N: usize, const M: usize, const P: usize, T: ArithmeticType>
-    std::ops::AddAssign<Matrix<M, P, T>> for Matrix<N, M, T>
+impl<const N: usize, const M: usize, const P: usize, T: Ring> std::ops::AddAssign<Matrix<M, P, T>>
+    for Matrix<N, M, T>
 where
-    T: Copy + std::default::Default + std::ops::Add<Output = T>,
+    T: Ring,
 {
     fn add_assign(&mut self, rhs: Matrix<M, P, T>) {
-        todo!()
+        std::iter::zip(self.data.iter_mut(), rhs.data.iter()).for_each(|(a, b)| *a += *b)
+    }
+}
+
+impl<const N: usize, const M: usize, const P: usize, T: Ring> std::ops::Add<Matrix<M, P, T>>
+    for Matrix<N, M, T>
+where
+    T: Ring,
+{
+    type Output = Self;
+    fn add(self, rhs: Matrix<M, P, T>) -> Self::Output{
+        let mut m = self.clone();
+        m += rhs;
+        m
     }
 }
 
@@ -137,7 +226,7 @@ fn mul<const N: usize, const M: usize, const P: usize, T>(
     rhs: &Matrix<M, P, T>,
 ) -> Matrix<N, P, T>
 where
-    T: ArithmeticType,
+    T: Ring,
 {
     let mut out = Matrix::<N, P, T>::default();
     for i in 0..N {
@@ -154,7 +243,7 @@ where
 impl<const N: usize, const M: usize, const P: usize, T: Copy> std::ops::Mul<Matrix<M, P, T>>
     for Matrix<N, M, T>
 where
-    T: ArithmeticType,
+    T: Ring,
 {
     type Output = Matrix<N, P, T>;
 
@@ -194,6 +283,36 @@ mod tests {
 
         assert_eq!(m1, m2);
         assert_ne!(m1, m3);
+    }
+
+    #[test]
+    fn matrix_transpose() {
+        let m = Matrix::<2, 4, _>::from_nested([[1, 2, 3, 4], [5, 6, 7, 8]]);
+        let m_transposed = Matrix::<4, 2, _>::from_nested([[1, 5], [2, 6], [3, 7], [4, 8]]);
+
+        assert_eq!(m.transpose(), m_transposed);
+    }
+
+    #[test]
+    fn matrix_add() {
+        let m1 = Matrix::<2, 2, _>::from_nested([[1, 2], [3, 4]]);
+        let m2 = Matrix::<2, 2, _>::from_nested([[1, 1], [1, 1]]);
+
+        let expected = Matrix::<2, 2, _>::from_nested([[2, 3], [4, 5]]);
+
+        assert_eq!(m1 + m2, expected);
+    }
+
+    #[test]
+    fn matrix_add_assign() {
+        let mut m1 = Matrix::<2, 2, _>::from_nested([[1, 2], [3, 4]]);
+        let m2 = Matrix::<2, 2, _>::from_nested([[1, 1], [1, 1]]);
+
+        let expected = Matrix::<2, 2, _>::from_nested([[2, 3], [4, 5]]);
+
+        m1 += m2;
+
+        assert_eq!(m1, expected);
     }
 
     #[test]
