@@ -145,7 +145,6 @@ impl<const N: usize, const M: usize, T: Field> Matrix<N, M, T> {
                 m[(i, j)] = self[(j, i)];
             }
         }
-
         m
     }
 }
@@ -155,7 +154,6 @@ pub fn identity<const N: usize, T: Field>() -> Matrix<N, N, T> {
     for i in 0..N {
         m[(i, i)] = T::one();
     }
-
     m
 }
 
@@ -182,6 +180,14 @@ impl<const N: usize, const M: usize, T: Field> std::ops::Index<(usize, usize)> f
     }
 }
 
+impl<const N: usize, T: Field> std::ops::Index<usize> for Matrix<N, 1, T> {
+    type Output = T;
+    fn index(&self, index: usize) -> &Self::Output {
+        assert!(index < N, "index out of bounds: {}", index);
+        &self.data[index]
+    }
+}
+
 impl<const N: usize, const M: usize, T: Field> std::ops::IndexMut<(usize, usize)>
     for Matrix<N, M, T>
 {
@@ -196,34 +202,34 @@ impl<const N: usize, const M: usize, T: Field> std::ops::IndexMut<(usize, usize)
     }
 }
 
-impl<const N: usize, const M: usize, T: Copy> std::cmp::PartialEq for Matrix<N, M, T>
-where
-    T: Field,
-{
+impl<const N: usize, T: Field> std::ops::IndexMut<usize> for Matrix<N, 1, T> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        assert!(index < N, "index out of bounds: {}", index);
+        &mut self.data[index]
+    }
+}
+
+impl<const N: usize, const M: usize, T: Field> std::cmp::PartialEq for Matrix<N, M, T> {
     fn eq(&self, other: &Self) -> bool {
         for i in 0..({ N * M }) {
             if !&(self.data[i]).approx_eq(&other.data[i]) {
                 return false;
             }
         }
-
         true
     }
 }
 
 impl<const N: usize, const M: usize, T: Field> std::ops::AddAssign<&Matrix<N, M, T>>
     for Matrix<N, M, T>
-where
-    T: Field,
 {
     fn add_assign(&mut self, rhs: &Matrix<N, M, T>) {
         std::iter::zip(self.data.iter_mut(), rhs.data.iter()).for_each(|(a, b)| *a += *b)
     }
 }
 
-impl<const N: usize, const M: usize, T: Field> std::ops::Add<&Matrix<N, M, T>> for &Matrix<N, M, T>
-where
-    T: Field,
+impl<const N: usize, const M: usize, T: Field> std::ops::Add<&Matrix<N, M, T>>
+    for &Matrix<N, M, T>
 {
     type Output = Matrix<N, M, T>;
     fn add(self, rhs: &Matrix<N, M, T>) -> Self::Output {
@@ -235,8 +241,6 @@ where
 
 impl<const N: usize, const M: usize, T: Field> std::ops::SubAssign<&Matrix<N, M, T>>
     for Matrix<N, M, T>
-where
-    T: Field,
 {
     fn sub_assign(&mut self, rhs: &Matrix<N, M, T>) {
         std::iter::zip(self.data.iter_mut(), rhs.data.iter()).for_each(|(a, b)| *a -= *b)
@@ -293,32 +297,21 @@ impl<const N: usize, const M: usize, T: Field> std::ops::Div<T> for &Matrix<N, M
     }
 }
 
-fn mul<const N: usize, const M: usize, const P: usize, T>(
-    lhs: &Matrix<N, M, T>,
-    rhs: &Matrix<M, P, T>,
-) -> Matrix<N, P, T>
-where
-    T: Field,
-{
-    let mut out = Matrix::<N, P, T>::default();
-    for i in 0..N {
-        for j in 0..P {
-            for k in 0..M {
-                out[(i, j)] = out[(i, j)] + lhs[(i, k)] * rhs[(k, j)];
-            }
-        }
-    }
-
-    out
-}
-
 impl<const N: usize, const M: usize, const P: usize, T: Field> std::ops::Mul<&Matrix<M, P, T>>
     for &Matrix<N, M, T>
 {
     type Output = Matrix<N, P, T>;
 
     fn mul(self, rhs: &Matrix<M, P, T>) -> Self::Output {
-        mul(self, rhs)
+        let mut out = Matrix::<N, P, T>::default();
+        for i in 0..N {
+            for j in 0..P {
+                for k in 0..M {
+                    out[(i, j)] = out[(i, j)] + self[(i, k)] * rhs[(k, j)];
+                }
+            }
+        }
+        out
     }
 }
 
@@ -416,5 +409,17 @@ mod tests {
         let id_transposed = id.transposed();
 
         assert_eq!(id, id_transposed);
+    }
+
+    #[test]
+    fn matrix_vector_single_index() {
+        let v = Matrix::<3, 1, _>::new([1, 2, 3]);
+
+        assert_eq!(v[0], 1);
+        assert_eq!(v[1], 2);
+        assert_eq!(v[2], 3);
+        assert_eq!(v[(0, 0)], 1);
+        assert_eq!(v[(1, 0)], 2);
+        assert_eq!(v[(2, 0)], 3);
     }
 }
