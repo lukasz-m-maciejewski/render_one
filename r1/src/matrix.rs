@@ -127,14 +127,14 @@ pub struct Matrix<const N: usize, const M: usize, T: Field> {
 
 impl<const N: usize, const M: usize, T: Field> std::fmt::Debug for Matrix<N, M, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("[")?;
+        f.write_str("[\n")?;
         for i in 0..N {
             f.write_str("[")?;
             f.write_fmt(format_args!("{:?}", self[(i, 0)]))?;
             for j in 1..M {
                 f.write_fmt(format_args!(",{:?}", self[(i, j)]))?;
             }
-            f.write_str("],")?;
+            f.write_str("],\n")?;
         }
         f.write_str("]")
     }
@@ -142,14 +142,14 @@ impl<const N: usize, const M: usize, T: Field> std::fmt::Debug for Matrix<N, M, 
 
 impl<const N: usize, const M: usize, T: Field> std::fmt::Display for Matrix<N, M, T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("[")?;
+        f.write_str("[\n")?;
         for i in 0..N {
             f.write_str("[")?;
             f.write_fmt(format_args!("{:?}", self[(i, 0)]))?;
             for j in 1..M {
                 f.write_fmt(format_args!(",{:?}", self[(i, j)]))?;
             }
-            f.write_str("],")?;
+            f.write_str("],\n")?;
         }
         f.write_str("]")
     }
@@ -379,23 +379,34 @@ impl<const N: usize, const M: usize, const P: usize, T: Field> std::ops::Mul<&Ma
     }
 }
 
-pub fn qr_decomposition<const N: usize, T: Field + Sqrt>(
-    m: &Matrix<N, N, T>,
-) -> (Matrix<N, N, T>, Matrix<N, N, T>) {
+pub enum QRResult<const N: usize, T: Field> {
+    Singular,
+    Decomposition(Matrix<N, N, T>, Matrix<N, N, T>),
+}
+
+pub fn qr_decomposition<const N: usize, T: Field + Sqrt>(m: &Matrix<N, N, T>) -> QRResult<N, T> {
     let mut q = m.clone();
     let mut r = Matrix::<N, N, T>::default();
 
     for k in 0..N {
+        println!("k:{}", k);
         for i in 0..k {
+            println!("  i:{}", i);
             r[(i, k)] = column_product(&q, i, k);
             column_sub_assign_with_factor(&mut q, k, i, r[(i, k)]);
         }
 
         r[(k, k)] = column_norm(&q, k);
+        if (r[(k, k)]).approx_eq(&T::zero()) {
+            return QRResult::Singular;
+        }
         column_div_assign(&mut q, k, r[(k, k)]);
+        println!("q:{}", q);
+        println!("r:{}", r);
     }
 
-    (-&q, -&r)
+    QRResult::Decomposition(-&q, -&r)
+    //QRResult::Decomposition(q, r)
 }
 
 fn column_product<const N: usize, T: Field>(m: &Matrix<N, N, T>, idx1: usize, idx2: usize) -> T {
@@ -430,6 +441,40 @@ fn column_sub_assign_with_factor<const N: usize, T: Field>(
 fn column_div_assign<const N: usize, T: Field>(m: &mut Matrix<N, N, T>, idx: usize, divisor: T) {
     for i in 0..N {
         m[(i, idx)] /= divisor;
+    }
+}
+
+pub fn lup_decomposition<const N: usize, T: Field>(
+    a: &Matrix<N, N, T>,
+) -> (Matrix<N, N, T>, Matrix<N, N, T>, [usize; N + 1]) {
+    let mut permutations: [usize; N + 1] = [0; N + 1];
+    for i in 0..(N + 1) {
+        permutations[i] = i;
+    }
+
+    for i in 0..N {}
+
+    (a.clone(), a.clone(), permutations)
+}
+
+fn swap_columns<const N: usize, T: Field>(a: &mut Matrix<N, N, T>, idx1: usize, idx2: usize) {
+    for i in 0..N {
+        let tmp = a[(i, idx1)];
+        a[(i, idx1)] = a[(i, idx2)];
+        a[(i, idx2)] = tmp;
+    }
+}
+
+pub fn determinant<const N: usize, T: Field + Sqrt>(a: &Matrix<N, N, T>) -> T {
+    if let QRResult::Decomposition(_, r) = qr_decomposition(a) {
+        //let r = -&r;
+        let mut det = T::one();
+        for i in 0..N {
+            det *= r[(i, i)];
+        }
+        return det;
+    } else {
+        return T::zero();
     }
 }
 
@@ -561,10 +606,12 @@ mod tests {
             [0.0, 0.0, -35.0],
         ]);
 
-        let (q, r) = qr_decomposition(&a);
-
-        assert_eq!(q, expected_q);
-        assert_eq!(r, expected_r);
+        if let QRResult::Decomposition(q, r) = qr_decomposition(&a) {
+            assert_eq!(q, expected_q);
+            assert_eq!(r, expected_r);
+        } else {
+            assert!(false);
+        }
     }
 
     #[test]
@@ -574,19 +621,97 @@ mod tests {
             [0.0, 0.0, 0.0],
             [6.0, 167.0, -68.0],
         ]);
-        let expected_q = Matrix::<3, 3, f64>::from_nested([
-            [-0.89442719, 0.4472136, 0.],
-            [-0., 0., -1.],
-            [-0.4472136, -0.89442719, 0.],
-        ]);
-        let expected_r = Matrix::<3, 3, f64>::from_nested([
-            [-13.41640786, -29.06888371, 26.83281573],
-            [0., -172.17723427, 62.60990337],
-            [0., 0., 0.],
-        ]);
-        let (q, r) = qr_decomposition(&a);
 
-        assert_eq!(q, expected_q);
-        assert_eq!(r, expected_r);
+        if let QRResult::Singular = qr_decomposition(&a) {
+            assert!(true);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn matrix_determinant_identity_is_one() {
+        let id = identity::<4, f64>();
+        let det = determinant(&id);
+
+        assert_eq!(det, 1.0);
+    }
+
+    #[test]
+    fn matrix_determinant_singular_is_zero() {
+        let a = Matrix::<3, 3, f64>::from_nested([
+            [12.0, -51.0, 4.0],
+            [0.0, 0.0, 0.0],
+            [6.0, 167.0, -68.0],
+        ]);
+
+        let det = determinant(&a);
+        assert!(det.approx_eq(&0.0));
+    }
+
+    #[test]
+    fn matrix_determinant_2x2_is_correct() {
+        let a = Matrix::<2, 2, f64>::new([3., 8., 4., 6.]);
+        let det: f64 = determinant(&a);
+
+        assert!(det.approx_eq(&(-14.)), "{}", det);
+    }
+
+    #[test]
+    fn matrix_determinant_2x2_another_is_correct() {
+        let a = Matrix::<2, 2, f64>::new([1., 2., 3., 4.]);
+        let det: f64 = determinant(&a);
+
+        assert!((-2.0).approx_eq(&det), "det:{}", det);
+    }
+
+    #[test]
+    fn matrix_determinant_3x3_is_correct() {
+        let a = Matrix::<3, 3, f64>::new([6.0, 1.0, 1.0, 4.0, -2.0, 5.0, 2.0, 8.0, 7.0]);
+        let det: f64 = determinant(&a);
+
+        assert!((-306.0).approx_eq(&det), "det:{}", det);
+    }
+
+    #[test]
+    fn matrix_qr_decomposition_2() {
+        let a =
+            Matrix::<3, 3, f64>::from_nested([[6.0, 1.0, 1.0], [4.0, -2.0, 5.0], [2.0, 8.0, 7.0]]);
+
+        let expected_q = Matrix::<3, 3, f64>::from_nested([
+            [-0.80178373, -0.06178021, -0.59441237],
+            [-0.53452248, -0.37068124, 0.75952691],
+            [-0.26726124, 0.92670309, 0.26418327],
+        ]);
+
+        let expected_r = Matrix::<3, 3, f64>::from_nested([
+            [-7.48331477, -1.87082869, -5.34522484],
+            [0., 8.09320703, 4.57173527],
+            [0., 0., 5.05250513],
+        ]);
+
+        if let QRResult::Decomposition(q, r) = qr_decomposition(&a) {
+            assert_eq!(q, expected_q, "Q:{}", q);
+            assert_eq!(r, expected_r, "R:{}", r);
+        } else {
+            assert!(false);
+        }
+    }
+
+    #[test]
+    fn matrix_qr_decomposition_3() {
+        let a = Matrix::<2, 2, f64>::from_nested([[1., 2.], [3., 4.]]);
+
+        let expected_q =
+            Matrix::<2, 2, f64>::from_nested([[-0.31622777, -0.9486833], [-0.9486833, 0.31622777]]);
+
+        let expected_r =
+            Matrix::<2, 2, f64>::from_nested([[-3.16227766, -4.42718872], [0., -0.63245553]]);
+        if let QRResult::Decomposition(q, r) = qr_decomposition(&a) {
+            assert!(q == expected_q, "Q:{}", q);
+            assert!(r == expected_r, "R:{}", r);
+        } else {
+            assert!(false);
+        }
     }
 }

@@ -18,12 +18,12 @@ struct Environment {
 
 fn tick(env: &Environment, proj: &Projectile) -> Projectile {
     Projectile {
-        position: proj.position + proj.velocity,
-        velocity: proj.velocity + env.gravity + env.wind,
+        position: &proj.position + &proj.velocity,
+        velocity: &(&proj.velocity + &env.gravity) + &env.wind,
     }
 }
 
-fn point_to_screen(point: Point, screen_height: usize) -> ScreenPoint {
+fn point_to_screen(point: &Point, screen_height: usize) -> ScreenPoint {
     ScreenPoint {
         x: point.x() as usize,
         y: screen_height - point.y() as usize,
@@ -43,7 +43,7 @@ fn main() {
 
     let mut p = Projectile {
         position: point(0.0, 1.0, 0.0),
-        velocity: normalized(vector(1.0, 1.8, 0.0)) * magnitude,
+        velocity: &normalized(&vector(1.0, 1.8, 0.0)) * magnitude,
     };
 
     let mut tick_count = 0;
@@ -54,7 +54,7 @@ fn main() {
     let red = Color::new_rgb(1.0, 0.0, 0.0);
 
     while p.position.y() > 0.0 {
-        canvas.write_pixel(point_to_screen(p.position, canvas.height()), red);
+        canvas.write_pixel(point_to_screen(&p.position, canvas.height()), red);
         p = tick(&env, &p);
         tick_count += 1;
     }

@@ -14,8 +14,8 @@ struct Environment {
 
 fn tick(env: &Environment, proj: &Projectile) -> Projectile {
     Projectile {
-        position: proj.position + proj.velocity,
-        velocity: proj.velocity + env.gravity + env.wind,
+        position: &proj.position + &proj.velocity,
+        velocity: &(&proj.velocity + &env.gravity) + &env.wind,
     }
 }
 
@@ -31,7 +31,7 @@ fn main() {
     };
     let mut p = Projectile {
         position: point(0.0, 1.0, 0.0),
-        velocity: normalized(vector(1.0, 1.0, 0.0)) * magnitude,
+        velocity: &normalized(&vector(1.0, 1.0, 0.0)) * magnitude,
     };
 
     let mut tick_count = 0;
