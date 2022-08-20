@@ -194,10 +194,13 @@ impl<const N: usize, const M: usize, T: Field> std::default::Default for Matrix<
 }
 
 impl<const N: usize, const M: usize, T: Field> Matrix<N, M, T> {
-    pub fn new(coeffs: [T; N * M]) -> Matrix<N, M, T> {
-        Matrix::<N, M, T> {
-            data: coeffs.to_vec(),
-        }
+    pub fn new<Coeffs>(coeffs: Coeffs) -> Matrix<N, M, T>
+    where
+        Coeffs: IntoIterator<Item = T>,
+    {
+        let maybe_data = Vec::<T>::from_iter(coeffs);
+        assert_eq!(maybe_data.len(), N * M);
+        Matrix::<N, M, T> { data: maybe_data }
     }
 
     pub fn from_nested(nested_coeffs: [[T; M]; N]) -> Matrix<N, M, T> {
