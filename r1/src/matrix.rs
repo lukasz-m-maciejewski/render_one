@@ -158,7 +158,7 @@ impl<const N: usize, const M: usize, T: Field> std::fmt::Debug for Matrix<N, M, 
             f.write_str("[")?;
             f.write_fmt(format_args!("{:?}", self[(i, 0)]))?;
             for j in 1..M {
-                f.write_fmt(format_args!(",{:?}", self[(i, j)]))?;
+                f.write_fmt(format_args!(", {:?}", self[(i, j)]))?;
             }
             f.write_str("],\n")?;
         }
@@ -173,7 +173,7 @@ impl<const N: usize, const M: usize, T: Field> std::fmt::Display for Matrix<N, M
             f.write_str("[")?;
             f.write_fmt(format_args!("{:?}", self[(i, 0)]))?;
             for j in 1..M {
-                f.write_fmt(format_args!(",{:?}", self[(i, j)]))?;
+                f.write_fmt(format_args!(", {:?}", self[(i, j)]))?;
             }
             f.write_str("],\n")?;
         }
@@ -502,7 +502,7 @@ pub fn lup_decomposition<const N: usize, T: Field>(
                 permutations[max_idx] = tmp;
             }
 
-            swap_columns(&mut a, i, max_idx);
+            swap_rows(&mut a, i, max_idx);
             permutations[N] += 1;
         }
 
@@ -520,11 +520,19 @@ pub fn lup_decomposition<const N: usize, T: Field>(
     LUPResult::Decomposition(a, permutations)
 }
 
-fn swap_columns<const N: usize, T: Field>(a: &mut Matrix<N, N, T>, idx1: usize, idx2: usize) {
+pub fn swap_columns<const N: usize, T: Field>(a: &mut Matrix<N, N, T>, idx1: usize, idx2: usize) {
     for i in 0..N {
         let tmp = a[(i, idx1)];
         a[(i, idx1)] = a[(i, idx2)];
         a[(i, idx2)] = tmp;
+    }
+}
+
+pub fn swap_rows<const N: usize, T: Field>(a: &mut Matrix<N, N, T>, idx1: usize, idx2: usize) {
+    for i in 0..N {
+        let tmp = a[(idx1, i)];
+        a[(idx1, i)] = a[(idx2, i)];
+        a[(idx2, i)] = tmp;
     }
 }
 
@@ -545,16 +553,25 @@ pub fn inverse_matrix<const N: usize, T: Field>(
 ) -> std::option::Option<Matrix<N, N, T>> {
     if let LUPResult::Decomposition(lu, p) = lup_decomposition(a) {
         let mut inv = Matrix::<N, N, T>::default();
+        println!("lu:{}", lu);
+        println!("p:{:?}", p);
+        for i in 0..N {
+            for j in 0..N {
+                inv[(i, j)] = if p[i] == j { T::one() } else { T::zero() };
+            }
+        }
+        println!("inv1:{}", inv);
         for j in 0..N {
             for i in 0..N {
-                inv[(i, j)] = if p[i] == j { T::one() } else { T::zero() };
-
                 for k in 0..i {
                     let subtrahend = lu[(i, k)] * inv[(k, j)];
                     inv[(i, j)] -= subtrahend;
                 }
             }
+        }
+        println!("inv1:{}", inv);
 
+        for j in 0..N {
             for i in (0..N).rev() {
                 for k in (i + 1)..N {
                     let subtrahend = lu[(i, k)] * inv[(k, j)];
@@ -569,6 +586,40 @@ pub fn inverse_matrix<const N: usize, T: Field>(
     } else {
         return std::option::Option::None;
     }
+}
+
+pub fn split_lu<const N: usize, T: Field>(
+    a: &Matrix<N, N, T>,
+) -> (Matrix<N, N, T>, Matrix<N, N, T>) {
+    let mut u = a.clone();
+    let mut l = Matrix::<N, N, T>::default();
+
+    for i in 1..N {
+        for j in 0..i {
+            l[(i, j)] = a[(i, j)];
+            u[(i, j)] = T::zero();
+        }
+    }
+
+    for i in 0..N {
+        l[(i, i)] = T::one();
+    }
+
+    (l, u)
+}
+
+pub fn permutation_to_matrix<const N: usize, T: Field>(p: &Vec<usize>) -> Matrix<N, N, T> {
+    let mut pmat = Matrix::<N, N, T>::default();
+
+    for i in 0..N {
+        for j in 0..N {
+            if p[i] == j {
+                pmat[(i, j)] = T::one();
+            }
+        }
+    }
+
+    pmat
 }
 
 pub type Matrix2 = Matrix<2, 2, f64>;
@@ -818,5 +869,55 @@ mod tests {
         let expected_inv = Matrix::<2, 2, f64>::from_nested([[0.6, -0.7], [-0.2, 0.4]]);
 
         assert_eq!(inv_a, expected_inv);
+    }
+
+    #[test]
+    fn matrix_2x2_determinant() {
+        let a = Matrix::<2, 2, f64>::from_nested([[1., 5.], [-3., 2.]]);
+
+        let det = determinant(&a);
+
+        assert!(det.approx_eq(&17.0));
+    }
+
+    #[test]
+    fn matrix_4x4_inverse_1() {
+        let a = Matrix::<4, 4, f64>::from_nested([
+            [-5., 2., 6., -8.],
+            [1., -5., 1., 8.],
+            [7., 7., -6., -7.],
+            [1., -3., 7., 4.],
+        ]);
+
+        let expected_inv = Matrix::<4, 4, f64>::from_nested([
+            [0.21804511, 0.45112781, 0.2406015, -0.04511278],
+            [-0.80827067, -1.45676691, -0.44360902, 0.52067669],
+            [-0.07894736, -0.22368421, -0.05263157, 0.19736842],
+            [-0.52255639, -0.81390977, -0.30075187, 0.30639097],
+        ]);
+
+        assert!(determinant(&a).approx_eq(&532.0));
+
+        assert_eq!(inverse_matrix(&a).unwrap(), expected_inv);
+        assert_eq!(&(inverse_matrix(&a).unwrap()) * &a, identity::<4, f64>());
+    }
+
+    #[test]
+    fn matrix_4x4_lu() {
+        let a = Matrix::<4, 4, f64>::from_nested([
+            [-5., 2., 6., -8.],
+            [1., -5., 1., 8.],
+            [7., 7., -6., -7.],
+            [1., -3., 7., 4.],
+        ]);
+
+        if let LUPResult::Decomposition(lu, p) = lup_decomposition(&a) {
+            let (l, u) = split_lu(&lu);
+            let pmat = permutation_to_matrix::<4, f64>(&p);
+
+            assert_eq!(&pmat * &a, &l * &u);
+        } else {
+            assert!(false);
+        }
     }
 }
