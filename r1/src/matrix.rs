@@ -556,14 +556,13 @@ pub fn inverse_matrix<const N: usize, T: Field>(
 ) -> std::option::Option<Matrix<N, N, T>> {
     if let LUPResult::Decomposition(lu, p) = lup_decomposition(a) {
         let mut inv = Matrix::<N, N, T>::default();
-        println!("lu:{}", lu);
-        println!("p:{:?}", p);
+
         for i in 0..N {
             for j in 0..N {
                 inv[(i, j)] = if p[i] == j { T::one() } else { T::zero() };
             }
         }
-        println!("inv1:{}", inv);
+
         for j in 0..N {
             for i in 0..N {
                 for k in 0..i {
@@ -572,7 +571,6 @@ pub fn inverse_matrix<const N: usize, T: Field>(
                 }
             }
         }
-        println!("inv1:{}", inv);
 
         for j in 0..N {
             for i in (0..N).rev() {

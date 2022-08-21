@@ -51,6 +51,21 @@ pub fn normalized(t: &Tuple4) -> Tuple4 {
     new_t
 }
 
+pub struct Ray {
+    pub origin: Point,
+    pub direction: Vector,
+}
+
+impl Ray {
+    pub fn new(origin: Point, direction: Vector) -> Ray {
+        Ray { origin, direction }
+    }
+}
+
+pub fn position(ray: &Ray, t: f64) -> Point {
+    &(ray.origin) + &(&ray.direction * t)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
