@@ -1,4 +1,3 @@
-use crate::linear_algebra::*;
 use crate::matrix::*;
 
 pub fn translation(x: f64, y: f64, z: f64) -> Matrix<4, 4, f64> {
@@ -58,6 +57,7 @@ pub fn shearing(x_y: f64, x_z: f64, y_x: f64, y_z: f64, z_x: f64, z_y: f64) -> M
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::linear_algebra::*;
 
     #[test]
     fn translation_test_1() {
