@@ -3,4 +3,5 @@ members = [
     "r1",
     "runner1",
     "projectile_on_canvas",
+    "flat_renderer",
 ]

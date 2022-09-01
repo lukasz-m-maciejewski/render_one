@@ -3,6 +3,13 @@
 version = 3
 
 [[package]]
+name = "flat_renderer"
+version = "0.1.0"
+dependencies = [
+ "r1",
+]
+
+[[package]]
 name = "projectile_on_canvas"
 version = "0.1.0"
 dependencies = [
