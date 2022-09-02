@@ -1,15 +1,9 @@
 extern crate string_builder;
 
 use crate::color::Color;
-use crate::util::Dimensions;
+use crate::util::{Dimensions, ScreenPoint};
 
 use string_builder::Builder;
-
-#[derive(Clone, Copy, Debug)]
-pub struct ScreenPoint {
-    pub x: usize,
-    pub y: usize,
-}
 
 #[derive(Clone, Debug)]
 pub struct Canvas {

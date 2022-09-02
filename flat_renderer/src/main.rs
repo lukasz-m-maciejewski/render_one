@@ -2,10 +2,10 @@ extern crate r1;
 
 use std::io::Write;
 
-use r1::canvas::{canvas_to_ppm, Canvas, ScreenPoint};
-use r1::util::Dimensions;
+use r1::canvas::{canvas_to_ppm, Canvas};
 use r1::color::Color;
 use r1::linear_algebra::{normalized, point, vector, Point, Vector};
+use r1::util::{Dimensions, ScreenPoint};
 
 struct Projectile {
     position: Point,

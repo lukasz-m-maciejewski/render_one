@@ -413,5 +413,4 @@ mod tests {
 
         assert_eq!(hit(&xs).unwrap(), xs[3]);
     }
-
 }
