@@ -4,68 +4,43 @@ use std::io::Write;
 
 use r1::canvas::{canvas_to_ppm, Canvas};
 use r1::color::Color;
-use r1::linear_algebra::{normalized, point, vector, Point, Vector};
-use r1::util::{Dimensions, ScreenPoint};
-
-struct Projectile {
-    position: Point,
-    velocity: Vector,
-}
-
-struct Environment {
-    gravity: Vector,
-    wind: Vector,
-}
-
-fn tick(env: &Environment, proj: &Projectile) -> Projectile {
-    Projectile {
-        position: &proj.position + &proj.velocity,
-        velocity: &(&proj.velocity + &env.gravity) + &env.wind,
-    }
-}
-
-fn point_to_screen(point: &Point, screen_height: usize) -> ScreenPoint {
-    ScreenPoint {
-        x: point.x() as usize,
-        y: screen_height - point.y() as usize,
-    }
-}
+use r1::linear_algebra::{instersect, point, vector, Sphere};
+use r1::ray_emitter::{Camera, RayEmitter};
+use r1::util::{Dimensions, PhysicalDimensions, Resolution};
 
 fn main() {
-    let magnitude = std::env::args()
-        .nth(1)
-        .unwrap_or("11.25".to_string())
-        .parse::<f64>()
-        .unwrap();
-    let env = Environment {
-        gravity: vector(0.0, -0.1, 0.0),
-        wind: vector(-0.01, 0.0, 0.0),
-    };
+    let sphere = Sphere::new(point(0.0, 0.0, 7.0), 2.0);
+    let camera = Camera::new(
+        point(0.0, 0.0, 0.0),
+        vector(0.0, 0.0, 1.0),
+        vector(0.0, 1.0, 0.0),
+        3.0,
+        Resolution {
+            width: 1920,
+            height: 1080,
+        },
+        PhysicalDimensions {
+            width: 3.4,
+            height: 2.0,
+        },
+    )
+    .unwrap();
 
-    let mut p = Projectile {
-        position: point(0.0, 1.0, 0.0),
-        velocity: &normalized(&vector(1.0, 1.8, 0.0)) * magnitude,
-    };
-
-    let mut tick_count = 0;
     let mut canvas = Canvas::new(Dimensions {
-        width: 900,
-        height: 550,
+        width: 1920,
+        height: 1080,
     });
+
+    let black = Color::new_rgb(0.0, 0.0, 0.0);
     let red = Color::new_rgb(1.0, 0.0, 0.0);
 
-    while p.position.y() > 0.0 {
-        canvas.write_pixel(point_to_screen(&p.position, canvas.height()), red);
-        p = tick(&env, &p);
-        tick_count += 1;
+    for eray in RayEmitter::new(camera) {
+        let intersection = instersect(&sphere, &eray.ray);
+        let color = if intersection.len() == 2 { red } else { black };
+        canvas.write_pixel(eray.source, color)
     }
 
-    println!(
-        "Projectile landed at {} with velocity {} after {tick_count} ticks.",
-        p.position, p.velocity
-    );
-
-    let mut file = std::fs::File::create("projectile_trace.ppm").expect("file create failed");
+    let mut file = std::fs::File::create("the_render.ppm").expect("file create failed");
     file.write_all(canvas_to_ppm(&canvas).as_bytes())
         .expect("file write failed");
 }
