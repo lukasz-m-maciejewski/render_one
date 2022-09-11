@@ -1,6 +1,8 @@
 use crate::matrix::*;
 
-pub fn translation(x: f64, y: f64, z: f64) -> Matrix<4, 4, f64> {
+pub type Transformation = Matrix<4, 4, f64>;
+
+pub fn translation(x: f64, y: f64, z: f64) -> Transformation {
     let mut t = identity::<4, f64>();
     t[(0, 3)] = x;
     t[(1, 3)] = y;
@@ -8,7 +10,7 @@ pub fn translation(x: f64, y: f64, z: f64) -> Matrix<4, 4, f64> {
     t
 }
 
-pub fn scaling(x: f64, y: f64, z: f64) -> Matrix<4, 4, f64> {
+pub fn scaling(x: f64, y: f64, z: f64) -> Transformation {
     let mut t = identity::<4, f64>();
     t[(0, 0)] = x;
     t[(1, 1)] = y;
@@ -16,7 +18,7 @@ pub fn scaling(x: f64, y: f64, z: f64) -> Matrix<4, 4, f64> {
     t
 }
 
-pub fn rotation_x(angle: f64) -> Matrix<4, 4, f64> {
+pub fn rotation_x(angle: f64) -> Transformation {
     let mut t = identity::<4, f64>();
     t[(1, 1)] = f64::cos(angle);
     t[(1, 2)] = -f64::sin(angle);
@@ -25,7 +27,7 @@ pub fn rotation_x(angle: f64) -> Matrix<4, 4, f64> {
     t
 }
 
-pub fn rotation_y(angle: f64) -> Matrix<4, 4, f64> {
+pub fn rotation_y(angle: f64) -> Transformation {
     let mut t = identity::<4, f64>();
     t[(0, 0)] = f64::cos(angle);
     t[(0, 2)] = f64::sin(angle);
@@ -34,7 +36,7 @@ pub fn rotation_y(angle: f64) -> Matrix<4, 4, f64> {
     t
 }
 
-pub fn rotation_z(angle: f64) -> Matrix<4, 4, f64> {
+pub fn rotation_z(angle: f64) -> Transformation {
     let mut t = identity::<4, f64>();
     t[(0, 0)] = f64::cos(angle);
     t[(0, 1)] = -f64::sin(angle);
@@ -43,7 +45,7 @@ pub fn rotation_z(angle: f64) -> Matrix<4, 4, f64> {
     t
 }
 
-pub fn shearing(x_y: f64, x_z: f64, y_x: f64, y_z: f64, z_x: f64, z_y: f64) -> Matrix<4, 4, f64> {
+pub fn shearing(x_y: f64, x_z: f64, y_x: f64, y_z: f64, z_x: f64, z_y: f64) -> Transformation {
     let mut t = identity::<4, f64>();
     t[(0, 1)] = x_y;
     t[(0, 2)] = x_z;

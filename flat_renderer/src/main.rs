@@ -4,8 +4,9 @@ use std::io::Write;
 
 use r1::canvas::{canvas_to_ppm, Canvas};
 use r1::color::Color;
-use r1::linear_algebra::{instersect, point, vector, Sphere};
+use r1::linear_algebra::{point, vector};
 use r1::ray_emitter::{Camera, RayEmitter};
+use r1::sphere::{instersect, Sphere};
 use r1::util::{Dimensions, PhysicalDimensions, Resolution};
 
 fn main() {

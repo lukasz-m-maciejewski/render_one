@@ -12,7 +12,7 @@ pub struct PhysicalDimensions {
     pub height: f64,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ScreenPoint {
     pub x: usize,
     pub y: usize,

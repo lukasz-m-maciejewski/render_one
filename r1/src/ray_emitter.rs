@@ -1,6 +1,7 @@
 use crate::{
     linear_algebra::*,
     matrix::dot,
+    ray::*,
     util::{PhysicalDimensions, Resolution, ScreenPoint},
 };
 
@@ -128,6 +129,7 @@ impl RayEmitter {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct EmmitedRay {
     pub source: ScreenPoint,
     pub ray: Ray,
@@ -260,13 +262,16 @@ mod tests {
         println!("{:?}", points);
 
         assert_eq!(points.len(), 4);
-        assert_eq!(points[0].origin, point(0.0, 0.0, 0.0));
-        assert_eq!(points[0].direction, normalized(&vector(1.0, 1.0, 1.0)));
-        assert_eq!(points[1].origin, point(0.0, 0.0, 0.0));
-        assert_eq!(points[1].direction, normalized(&vector(-1.0, 1.0, 1.0)));
-        assert_eq!(points[2].origin, point(0.0, 0.0, 0.0));
-        assert_eq!(points[2].direction, normalized(&vector(1.0, -1.0, 1.0)));
-        assert_eq!(points[3].origin, point(0.0, 0.0, 0.0));
-        assert_eq!(points[3].direction, normalized(&vector(-1.0, -1.0, 1.0)));
+        assert_eq!(points[0].ray.origin, point(0.0, 0.0, 0.0));
+        assert_eq!(points[0].ray.direction, normalized(&vector(1.0, 1.0, 1.0)));
+        assert_eq!(points[1].ray.origin, point(0.0, 0.0, 0.0));
+        assert_eq!(points[1].ray.direction, normalized(&vector(-1.0, 1.0, 1.0)));
+        assert_eq!(points[2].ray.origin, point(0.0, 0.0, 0.0));
+        assert_eq!(points[2].ray.direction, normalized(&vector(1.0, -1.0, 1.0)));
+        assert_eq!(points[3].ray.origin, point(0.0, 0.0, 0.0));
+        assert_eq!(
+            points[3].ray.direction,
+            normalized(&vector(-1.0, -1.0, 1.0))
+        );
     }
 }
